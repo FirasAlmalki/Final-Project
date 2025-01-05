@@ -154,7 +154,7 @@ def process_live_feed():
 
             # Play alarm sound if not already played
             if confidence >= confidence_threshold:
-                playsound.playsound("alarm.mp3")  # Replace with your own sound file path
+                playsound.playsound("signSpotter/alarm.mp3")  # Replace with your own sound file path
                 alarm_played = True  # Set flag to prevent continuous sound
 
         # Display the frame
