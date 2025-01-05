@@ -6,10 +6,10 @@ from tkinter import filedialog
 import playsound  # Import the playsound library
 
 # Initialize the model with the trained weights
-model = YOLO('C:/Users/Admin/Desktop/Project/SignSpotter/runs/detect/train4/weights/best.pt')
+model = YOLO('C:/Users/Admin/Desktop/Project/SignSpotter/runs/detect/train3/weights/best.pt')
 
 # Define output directory for processed files
-output_dir = 'C:/Users/Admin/Desktop/result/'  # You can change this to any valid path
+output_dir = 'C:/Users/Admin/Desktop/result'  # You can change this to any valid path
 
 # Variable to store the last detected sign
 last_detected_sign = None
