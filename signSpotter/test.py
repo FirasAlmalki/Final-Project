@@ -6,10 +6,10 @@ from tkinter import filedialog
 import playsound
 
 # Initialize the YOLO model with the trained weights
-model = YOLO('C:/Users/Admin/Desktop/Project/SignSpotter/runs/detect/train4/weights/best.pt')
+model = YOLO('runs/detect/train2/best.pt')
 
 # Define output directory for processed files
-output_dir = 'C:/Users/Admin/Desktop/result'  # You can change this to any valid path
+output_dir = 'output'  # Change this to any valid path
 
 # Variable to store the last detected sign
 last_detected_sign = None
@@ -82,11 +82,13 @@ def process_video(file_path):
 
 # Function to process live feed
 def process_live_feed():
-    camera_id = int(selected_camera.get())
-    cap = cv2.VideoCapture(camera_id)
+    cap = cv2.VideoCapture(selected_camera_index)
+    if not cap.isOpened():
+        print("Error: Unable to connect to the selected camera.")
+        return
 
     if not cap.isOpened():
-        print(f"Error: Unable to connect to the camera device {camera_id}.")
+        print("Error: Unable to connect to the live feed.")
         return
 
     global last_detected_sign
@@ -162,8 +164,70 @@ app.geometry("600x700")
 app.title("SignSpotter - YOLOv8 Detection")
 app.configure(bg="white")
 
-# Initialize the camera selection variable
-selected_camera = ctk.StringVar(value="0")
+
+
+
+def open_settings():
+    settings_window = ctk.CTkToplevel(app)
+    settings_window.title("Settings")
+    settings_window.geometry("400x400")
+
+    settings_label = ctk.CTkLabel(settings_window, text="Settings", font=("Arial", 20))
+    settings_label.pack(pady=20)
+
+    # Confidence Threshold Slider
+    confidence_label = ctk.CTkLabel(settings_window, text="Confidence Threshold:")
+    confidence_label.pack(pady=5)
+    confidence_slider = ctk.CTkSlider(settings_window, from_=0.1, to=1.0, number_of_steps=10)
+    confidence_slider.set(0.8)
+    confidence_slider.pack(pady=10)
+
+    # Theme Selection
+    theme_label = ctk.CTkLabel(settings_window, text="Choose Theme:")
+    theme_label.pack(pady=5)
+    theme_dropdown = ctk.CTkOptionMenu(settings_window, values=["Light", "Dark", "System"], command=set_theme)
+    theme_dropdown.pack(pady=10)
+
+    # Camera Selection
+    camera_label = ctk.CTkLabel(settings_window, text="Select Camera:")
+    camera_label.pack(pady=5)
+    camera_names = [f"Camera {i}" for i in range(2)]  # Assuming up to 10 cameras
+    camera_dropdown = ctk.CTkOptionMenu(settings_window, values=camera_names)
+    camera_dropdown.set(f"Camera {selected_camera_index}")  # Set the default value
+    camera_dropdown.pack(pady=10)
+
+    # Save Button
+    save_button = ctk.CTkButton(
+        settings_window,
+        text="Save",
+        command=lambda: save_settings(confidence_slider.get(), camera_dropdown.get())
+    )
+    save_button.pack(pady=20)
+
+def save_settings(confidence, selected_camera):
+    global confidence_threshold, selected_camera_index
+    confidence_threshold = confidence
+    selected_camera_index = int(selected_camera.split()[-1])  # Extract the camera index
+    print(f"New confidence threshold: {confidence}")
+    print(f"Selected camera: {selected_camera_index}")
+
+def set_theme(theme):
+    ctk.set_appearance_mode(theme)
+
+def save_settings(confidence, selected_camera):
+    global confidence_threshold, selected_camera_index
+    confidence_threshold = confidence
+    selected_camera_index = int(selected_camera.split()[-1])  # Extract the camera index
+    print(f"New confidence threshold: {confidence}")
+    print(f"Selected camera: {selected_camera_index}")
+
+selected_camera_index = 0  # Default to camera 0
+
+
+
+
+
+
 
 # Main frame for navigation
 main_frame = ctk.CTkFrame(master=app, corner_radius=10, fg_color="white")
@@ -178,12 +242,8 @@ title_label = ctk.CTkLabel(master=main_frame, text="Welcome to SignSpotter", fon
 title_label.pack(pady=20)
 
 # Subtitle
-subtitle_label = ctk.CTkLabel(master=main_frame, text="Select which camera you want to use", font=("Arial", 16), bg_color="white")
+subtitle_label = ctk.CTkLabel(master=main_frame, text="Select an Option Below", font=("Arial", 16), bg_color="white")
 subtitle_label.pack(pady=10)
-
-# Camera selection dropdown
-camera_dropdown = ctk.CTkOptionMenu(master=main_frame, variable=selected_camera, values=["Snapchat camera", "Driod cam"], fg_color="#E34234", text_color="white")
-camera_dropdown.pack(pady=10)
 
 # Buttons for functionalities
 button_live_feed = ctk.CTkButton(master=main_frame, text="Start Live Feed", command=start_live_feed, fg_color="#E34234", text_color="white")
@@ -199,7 +259,7 @@ button_video_upload.pack(pady=10)
 bottom_frame = ctk.CTkFrame(master=app, fg_color="white")
 bottom_frame.pack(fill="x", side="bottom")
 
-settings_button = ctk.CTkButton(master=bottom_frame, text="Settings", fg_color="#E34234", text_color="white", command=lambda: print("Settings clicked"))
+settings_button = ctk.CTkButton(master=bottom_frame, text="Settings", fg_color="#E34234", text_color="white", command=open_settings)
 settings_button.pack(side="left", expand=True, pady=10, padx=10)
 
 record_button = ctk.CTkButton(master=bottom_frame, text="Record", fg_color="#E34234", text_color="white", command=lambda: print("Record clicked"))
