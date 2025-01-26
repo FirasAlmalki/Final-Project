@@ -1,13 +1,16 @@
+from inference_sdk import InferenceHTTPClient
 import customtkinter as ctk
 import os
-from ultralytics import YOLO
 import cv2
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import playsound
 
-# Initialize the YOLO model with the trained weights
-model = YOLO('runs/detect/train2/best.pt')
+# Initialize the Roboflow client
+CLIENT = InferenceHTTPClient(
+    api_url="https://detect.roboflow.com",
+    api_key="Uv06rawidNIWdABmMvGC"
+)
 
 # Define output directory for processed files
 output_dir = 'output'  # Change this to any valid path
@@ -22,15 +25,22 @@ def process_image(file_path):
         print(f"Error: Could not load the image {file_path}.")
         return
 
-    results = model.predict(source=image, imgsz=640)
+    # Use Roboflow model for inference
+    result = CLIENT.infer(file_path, model_id="road-sign-detection-in-real-time/3")
 
-    for result in results[0].boxes.data:
-        x1, y1, x2, y2, confidence, class_id = result
-        cv2.rectangle(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-        cv2.putText(image, f'{model.names[int(class_id)]} {confidence:.2f}', (int(x1), int(y1) - 10),
+    for prediction in result['predictions']:
+        x1 = int(prediction['x'] - prediction['width'] / 2)
+        y1 = int(prediction['y'] - prediction['height'] / 2)
+        x2 = int(prediction['x'] + prediction['width'] / 2)
+        y2 = int(prediction['y'] + prediction['height'] / 2)
+        confidence = prediction['confidence']
+        class_name = prediction['class']
+
+        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.putText(image, f'{class_name} {confidence:.2f}', (x1, y1 - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
-    cv2.imshow(f'YOLOv8 Detection - {os.path.basename(file_path)}', image)
+    cv2.imshow(f'Roboflow Detection - {os.path.basename(file_path)}', image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -51,17 +61,24 @@ def process_video(file_path):
         if not ret:
             break
 
-        results = model.predict(source=frame, imgsz=640)
+        # Use Roboflow model for inference
+        result = CLIENT.infer(frame, model_id="road-sign-detection-in-real-time/3")
 
         new_sign_detected = False
 
-        for result in results[0].boxes.data:
-            x1, y1, x2, y2, confidence, class_id = result
-            cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-            cv2.putText(frame, f'{model.names[int(class_id)]} {confidence:.2f}', (int(x1), int(y1) - 10),
+        for prediction in result['predictions']:
+            x1 = int(prediction['x'] - prediction['width'] / 2)
+            y1 = int(prediction['y'] - prediction['height'] / 2)
+            x2 = int(prediction['x'] + prediction['width'] / 2)
+            y2 = int(prediction['y'] + prediction['height'] / 2)
+            confidence = prediction['confidence']
+            class_name = prediction['class']
+
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(frame, f'{class_name} {confidence:.2f}', (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
-            sign_image = frame[int(y1):int(y2), int(x1):int(x2)]
+            sign_image = frame[y1:y2, x1:x2]
             if sign_image is not None and (last_detected_sign is None or (last_detected_sign != sign_image).any()):
                 last_detected_sign = sign_image
                 new_sign_detected = True
@@ -88,10 +105,6 @@ def process_live_feed():
         print("Error: Unable to connect to the selected camera.")
         return
 
-    if not cap.isOpened():
-        print("Error: Unable to connect to the live feed.")
-        return
-
     global last_detected_sign
     alarm_played = False
 
@@ -102,18 +115,25 @@ def process_live_feed():
         if not ret:
             break
 
-        results = model.predict(source=frame, imgsz=640)
+        # Use Roboflow model for inference
+        result = CLIENT.infer(frame, model_id="road-sign-detection-in-real-time/3")
 
         new_sign_detected = False
 
-        for result in results[0].boxes.data:
-            x1, y1, x2, y2, confidence, class_id = result
-            cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-            cv2.putText(frame, f'{model.names[int(class_id)]} {confidence:.2f}', (int(x1), int(y1) - 10),
+        for prediction in result['predictions']:
+            x1 = int(prediction['x'] - prediction['width'] / 2)
+            y1 = int(prediction['y'] - prediction['height'] / 2)
+            x2 = int(prediction['x'] + prediction['width'] / 2)
+            y2 = int(prediction['y'] + prediction['height'] / 2)
+            confidence = prediction['confidence']
+            class_name = prediction['class']
+
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(frame, f'{class_name} {confidence:.2f}', (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
             if confidence >= confidence_threshold:
-                sign_image = frame[int(y1):int(y2), int(x1):int(x2)]
+                sign_image = frame[y1:y2, x1:x2]
                 if sign_image is not None:
                     if last_detected_sign is None:
                         last_detected_sign = sign_image
@@ -133,7 +153,7 @@ def process_live_feed():
                 playsound.playsound("alarm.mp3")
                 alarm_played = True
 
-        cv2.imshow("Live Feed - YOLOv8 Detection", frame)
+        cv2.imshow("Live Feed - Roboflow Detection", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -159,12 +179,10 @@ def start_live_feed():
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
 
-
-
 # Create the main application window
 app = ctk.CTk()
-app.geometry("600x700")
-app.title("SignSpotter - YOLOv8 Detection")
+app.geometry("1024x768")
+app.title("SignSpotter - YOLO Model Detection")
 app.configure(bg="white")
 
 # Load the image after the root window is created
@@ -172,7 +190,6 @@ image_path = "resources/visigen.png"  # Replace with the path to your image
 image = Image.open(image_path)
 image = image.resize((400, 200))  # Resize the image to fit in the frame
 image_tk = ImageTk.PhotoImage(image)
-
 
 def open_settings():
     settings_window = ctk.CTkToplevel(app)
@@ -221,18 +238,7 @@ def save_settings(confidence, selected_camera):
 def set_theme(theme):
     ctk.set_appearance_mode(theme)
 
-def save_settings(confidence, selected_camera):
-    global confidence_threshold, selected_camera_index
-    confidence_threshold = confidence
-    selected_camera_index = int(selected_camera.split()[-1])  # Extract the camera index
-    print(f"New confidence threshold: {confidence}")
-    print(f"Selected camera: {selected_camera_index}")
-
 selected_camera_index = 0  # Default to camera 0
-
-
-
-
 
 # Main frame for navigation
 main_frame = ctk.CTkFrame(master=app, corner_radius=10, fg_color="#eeeee4")
@@ -248,26 +254,74 @@ title_label = ctk.CTkLabel(master=main_frame, text="Welcome to SignSpotter", fon
 title_label.pack(pady=20)
 
 # Buttons for functionalities
-button_live_feed = ctk.CTkButton(master=main_frame, text="Start Live Feed", command=start_live_feed, fg_color="#ba3b0a", text_color="white")
+button_live_feed = ctk.CTkButton(
+    master=main_frame,
+    text="Start Live Feed",
+    command=start_live_feed,
+    fg_color="#ba3b0a",
+    text_color="white",
+    width=250,  # Main button width
+    height=60   # Main button height
+)
 button_live_feed.pack(pady=20)
 
-button_image_upload = ctk.CTkButton(master=main_frame, text="Upload Image", command=upload_image, fg_color="#ba3b0a", text_color="white")
+button_image_upload = ctk.CTkButton(
+    master=main_frame,
+    text="Upload Image",
+    command=upload_image,
+    fg_color="#ba3b0a",
+    text_color="white",
+    width=250,
+    height=60
+)
 button_image_upload.pack(pady=10)
 
-button_video_upload = ctk.CTkButton(master=main_frame, text="Upload Video", command=upload_video, fg_color="#ba3b0a", text_color="white")
+button_video_upload = ctk.CTkButton(
+    master=main_frame,
+    text="Upload Video",
+    command=upload_video,
+    fg_color="#ba3b0a",
+    text_color="white",
+    width=250,
+    height=60
+)
 button_video_upload.pack(pady=10)
 
 # Navigation buttons at the bottom
-bottom_frame = ctk.CTkFrame(master=app, fg_color="white")
-bottom_frame.pack(fill="x", side="bottom")
+bottom_frame = ctk.CTkFrame(master=app, fg_color="white")  # Define bottom_frame
+bottom_frame.pack(fill="x", side="bottom")  # Position it at the bottom of the main window
 
-settings_button = ctk.CTkButton(master=bottom_frame, text="Settings", fg_color="#ba3b0a", text_color="white", command=open_settings)
+settings_button = ctk.CTkButton(
+    master=bottom_frame,
+    text="Settings",
+    fg_color="#ba3b0a",
+    text_color="white",
+    command=open_settings,
+    width=140,  # Smaller navigation button width
+    height=45   # Smaller navigation button height
+)
 settings_button.pack(side="left", expand=True, pady=10, padx=10)
 
-info_button = ctk.CTkButton(master=bottom_frame, text="Information", fg_color="#ba3b0a", text_color="white", command=lambda: print("information clicked"))
+info_button = ctk.CTkButton(
+    master=bottom_frame,
+    text="Information",
+    fg_color="#ba3b0a",
+    text_color="white",
+    command=lambda: print("information clicked"),
+    width=140,
+    height=45
+)
 info_button.pack(side="left", expand=True, pady=10, padx=10)
 
-exit_button = ctk.CTkButton(master=bottom_frame, text="Exit", fg_color="#ba3b0a", text_color="white", command=app.quit)
+exit_button = ctk.CTkButton(
+    master=bottom_frame,
+    text="Exit",
+    fg_color="#ba3b0a",
+    text_color="white",
+    command=app.quit,
+    width=140,
+    height=45
+)
 exit_button.pack(side="left", expand=True, pady=10, padx=10)
 
 # Run the application
