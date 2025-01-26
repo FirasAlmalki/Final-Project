@@ -3,6 +3,7 @@ import os
 from ultralytics import YOLO
 import cv2
 from tkinter import filedialog
+from PIL import Image, ImageTk
 import playsound
 
 # Initialize the YOLO model with the trained weights
@@ -158,13 +159,19 @@ def start_live_feed():
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
 
+
+
 # Create the main application window
 app = ctk.CTk()
 app.geometry("600x700")
 app.title("SignSpotter - YOLOv8 Detection")
 app.configure(bg="white")
 
-
+# Load the image after the root window is created
+image_path = "resources/visigen.png"  # Replace with the path to your image
+image = Image.open(image_path)
+image = image.resize((400, 200))  # Resize the image to fit in the frame
+image_tk = ImageTk.PhotoImage(image)
 
 
 def open_settings():
@@ -227,45 +234,40 @@ selected_camera_index = 0  # Default to camera 0
 
 
 
-
-
 # Main frame for navigation
-main_frame = ctk.CTkFrame(master=app, corner_radius=10, fg_color="white")
+main_frame = ctk.CTkFrame(master=app, corner_radius=10, fg_color="#eeeee4")
 main_frame.pack(fill="both", expand=True, pady=(20, 10), padx=10)
 
 # Placeholder for the logo
-logo_placeholder = ctk.CTkLabel(master=main_frame, text="[LOGO HERE]", font=("Arial", 20), bg_color="white")
+logo_placeholder = ctk.CTkLabel(master=main_frame, image=image_tk, text="")
+logo_placeholder.image = image_tk  # Keep a reference to avoid garbage collection
 logo_placeholder.pack(pady=20)
 
 # Title label
-title_label = ctk.CTkLabel(master=main_frame, text="Welcome to SignSpotter", font=("Arial", 24), bg_color="white")
+title_label = ctk.CTkLabel(master=main_frame, text="Welcome to SignSpotter", font=("Arial", 24), bg_color="#eeeee4")
 title_label.pack(pady=20)
 
-# Subtitle
-subtitle_label = ctk.CTkLabel(master=main_frame, text="Select an Option Below", font=("Arial", 16), bg_color="white")
-subtitle_label.pack(pady=10)
-
 # Buttons for functionalities
-button_live_feed = ctk.CTkButton(master=main_frame, text="Start Live Feed", command=start_live_feed, fg_color="#E34234", text_color="white")
+button_live_feed = ctk.CTkButton(master=main_frame, text="Start Live Feed", command=start_live_feed, fg_color="#ba3b0a", text_color="white")
 button_live_feed.pack(pady=20)
 
-button_image_upload = ctk.CTkButton(master=main_frame, text="Upload Image", command=upload_image, fg_color="#E34234", text_color="white")
+button_image_upload = ctk.CTkButton(master=main_frame, text="Upload Image", command=upload_image, fg_color="#ba3b0a", text_color="white")
 button_image_upload.pack(pady=10)
 
-button_video_upload = ctk.CTkButton(master=main_frame, text="Upload Video", command=upload_video, fg_color="#E34234", text_color="white")
+button_video_upload = ctk.CTkButton(master=main_frame, text="Upload Video", command=upload_video, fg_color="#ba3b0a", text_color="white")
 button_video_upload.pack(pady=10)
 
 # Navigation buttons at the bottom
 bottom_frame = ctk.CTkFrame(master=app, fg_color="white")
 bottom_frame.pack(fill="x", side="bottom")
 
-settings_button = ctk.CTkButton(master=bottom_frame, text="Settings", fg_color="#E34234", text_color="white", command=open_settings)
+settings_button = ctk.CTkButton(master=bottom_frame, text="Settings", fg_color="#ba3b0a", text_color="white", command=open_settings)
 settings_button.pack(side="left", expand=True, pady=10, padx=10)
 
-record_button = ctk.CTkButton(master=bottom_frame, text="Record", fg_color="#E34234", text_color="white", command=lambda: print("Record clicked"))
-record_button.pack(side="left", expand=True, pady=10, padx=10)
+info_button = ctk.CTkButton(master=bottom_frame, text="Information", fg_color="#ba3b0a", text_color="white", command=lambda: print("information clicked"))
+info_button.pack(side="left", expand=True, pady=10, padx=10)
 
-exit_button = ctk.CTkButton(master=bottom_frame, text="Exit", fg_color="#E34234", text_color="white", command=app.quit)
+exit_button = ctk.CTkButton(master=bottom_frame, text="Exit", fg_color="#ba3b0a", text_color="white", command=app.quit)
 exit_button.pack(side="left", expand=True, pady=10, padx=10)
 
 # Run the application
