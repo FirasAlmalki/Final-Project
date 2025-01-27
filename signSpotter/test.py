@@ -146,9 +146,6 @@ def process_live_feed():
                             last_detected_sign = resized_sign_image
                             new_sign_detected = True
 
-        if new_sign_detected and last_detected_sign is not None:
-            cv2.imshow("Last Detected Sign", last_detected_sign)
-
             if confidence >= confidence_threshold:
                 playsound.playsound("alarm.mp3")
                 alarm_played = True
@@ -213,7 +210,7 @@ def open_settings():
     # Confidence Threshold Slider
     confidence_label = ctk.CTkLabel(settings_window, text="Confidence Threshold:")
     confidence_label.pack(pady=5)
-    confidence_slider = ctk.CTkSlider(settings_window, from_=0.1, to=1.0, number_of_steps=10)
+    confidence_slider = ctk.CTkSlider(settings_window, from_=0.1, to=1.0, number_of_steps=10, button_color="#ba3b0a", button_hover_color="#ba3b0a")
     confidence_slider.set(0.8)
     confidence_slider.pack(pady=10)
 
@@ -223,6 +220,9 @@ def open_settings():
     theme_dropdown = ctk.CTkOptionMenu(
         settings_window,
         values=["Light", "Dark"],
+        fg_color="#ba3b0a",  # Main button color
+        button_color="#ba3b0a",  # Dropdown button color
+        button_hover_color="#9a2b07",  # Hover color for dropdown button
         command=lambda theme: apply_theme(theme, settings_window, update_text_color)
     )
     theme_dropdown.set("Light")  # Default to light theme
@@ -232,7 +232,7 @@ def open_settings():
     camera_label = ctk.CTkLabel(settings_window, text="Select Camera:")
     camera_label.pack(pady=5)
     camera_names = [f"Camera {i}" for i in range(2)]  # Assuming up to 10 cameras
-    camera_dropdown = ctk.CTkOptionMenu(settings_window, values=camera_names)
+    camera_dropdown = ctk.CTkOptionMenu(settings_window, values=camera_names, fg_color="#ba3b0a", button_color="#ba3b0a", button_hover_color="#9a2b07")
     camera_dropdown.set(f"Camera {selected_camera_index}")  # Set the default value
     camera_dropdown.pack(pady=10)
 
@@ -240,6 +240,7 @@ def open_settings():
     save_button = ctk.CTkButton(
         settings_window,
         text="Save",
+        fg_color="#ba3b0a",
         command=lambda: save_settings(confidence_slider.get(), camera_dropdown.get())
     )
     save_button.pack(pady=20)
