@@ -177,7 +177,7 @@ def start_live_feed():
 
 # Set the appearance mode of the app
 ctk.set_appearance_mode("System")
-ctk.set_default_color_theme("dark-blue")
+ctk.set_default_color_theme("blue")
 
 # Create the main application window
 app = ctk.CTk()
@@ -195,7 +195,18 @@ def open_settings():
     settings_window = ctk.CTkToplevel(app)
     settings_window.title("Settings")
     settings_window.geometry("400x400")
+    settings_window.configure(fg_color="white")  # Default background color
 
+    # Helper function to update text colors
+    def update_text_color(theme):
+        text_color = "#000000" if theme == "Light" else "#FFFFFF"  # Black for light theme, white for dark
+        settings_label.configure(text_color=text_color)
+        confidence_label.configure(text_color=text_color)
+        theme_label.configure(text_color=text_color)
+        camera_label.configure(text_color=text_color)
+        save_button.configure(text_color=text_color)
+
+    # Settings Label
     settings_label = ctk.CTkLabel(settings_window, text="Settings", font=("Arial", 20))
     settings_label.pack(pady=20)
 
@@ -209,7 +220,12 @@ def open_settings():
     # Theme Selection
     theme_label = ctk.CTkLabel(settings_window, text="Choose Theme:")
     theme_label.pack(pady=5)
-    theme_dropdown = ctk.CTkOptionMenu(settings_window, values=["Light", "Dark", "System"], command=set_theme)
+    theme_dropdown = ctk.CTkOptionMenu(
+        settings_window,
+        values=["Light", "Dark"],
+        command=lambda theme: apply_theme(theme, settings_window, update_text_color)
+    )
+    theme_dropdown.set("Light")  # Default to light theme
     theme_dropdown.pack(pady=10)
 
     # Camera Selection
@@ -228,6 +244,28 @@ def open_settings():
     )
     save_button.pack(pady=20)
 
+    # Set initial text color based on the default theme
+    update_text_color("Light")
+
+
+# Function to apply the selected theme
+def apply_theme(theme, target_frame=None, update_text_color=None):
+    if theme == "Dark":
+        ctk.set_appearance_mode("Dark")
+        apply_dark_theme()
+        if target_frame:
+            target_frame.configure(fg_color=DARK_THEME_BG)  # Apply dark theme to settings
+    elif theme == "Light":
+        ctk.set_appearance_mode("Light")
+        reset_light_theme()
+        if target_frame:
+            target_frame.configure(fg_color="white")  # Apply light theme to settings
+
+    # Update text color in the settings window
+    if update_text_color:
+        update_text_color(theme)
+
+# Function to save settings, including theme preference
 def save_settings(confidence, selected_camera):
     global confidence_threshold, selected_camera_index
     confidence_threshold = confidence
@@ -235,8 +273,59 @@ def save_settings(confidence, selected_camera):
     print(f"New confidence threshold: {confidence}")
     print(f"Selected camera: {selected_camera_index}")
 
+# Define dark theme colors
+DARK_THEME_BG = "#2E2E2E"  # Dark background color
+DARK_THEME_FG = "#3E3E3E"  # Dark foreground color
+DARK_THEME_TEXT = "#FFFFFF"  # White text color
+DARK_THEME_BUTTON = "#BA3B0A"  # Button color (same as light theme for consistency)
+
+# Function to apply the dark theme
+def apply_dark_theme():
+    # Update main frame background
+    main_frame.configure(fg_color=DARK_THEME_BG)
+
+    # Update title label text color
+    title_label.configure(text_color=DARK_THEME_TEXT)
+
+    # Update button colors
+    button_live_feed.configure(fg_color=DARK_THEME_BUTTON, text_color=DARK_THEME_TEXT)
+    button_image_upload.configure(fg_color=DARK_THEME_BUTTON, text_color=DARK_THEME_TEXT)
+    button_video_upload.configure(fg_color=DARK_THEME_BUTTON, text_color=DARK_THEME_TEXT)
+
+    # Update navigation buttons
+    settings_button.configure(fg_color=DARK_THEME_BUTTON, text_color=DARK_THEME_TEXT)
+    info_button.configure(fg_color=DARK_THEME_BUTTON, text_color=DARK_THEME_TEXT)
+    exit_button.configure(fg_color=DARK_THEME_BUTTON, text_color=DARK_THEME_TEXT)
+
+# Function to reset to the light theme
+def reset_light_theme():
+    # Reset main frame background
+    main_frame.configure(fg_color="#EEEEE4")
+
+    # Reset title label text color
+    title_label.configure(text_color="#000000")  # Black text color
+
+    # Reset button colors
+    button_live_feed.configure(fg_color="#BA3B0A", text_color="white")
+    button_image_upload.configure(fg_color="#BA3B0A", text_color="white")
+    button_video_upload.configure(fg_color="#BA3B0A", text_color="white")
+
+    # Reset navigation buttons
+    settings_button.configure(fg_color="#BA3B0A", text_color="white")
+    info_button.configure(fg_color="#BA3B0A", text_color="white")
+    exit_button.configure(fg_color="#BA3B0A", text_color="white")
+
+# Function to set the theme
 def set_theme(theme):
-    ctk.set_appearance_mode(theme)
+    if theme == "Dark":
+        ctk.set_appearance_mode("Dark")
+        apply_dark_theme()
+    elif theme == "Light":
+        ctk.set_appearance_mode("Light")
+        reset_light_theme()
+    else:
+        ctk.set_appearance_mode("System")  # Use system default
+        reset_light_theme()  # Default to light theme for system mode
 
 selected_camera_index = 0  # Default to camera 0
 
