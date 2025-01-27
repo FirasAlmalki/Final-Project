@@ -201,7 +201,7 @@ def open_settings():
         confidence_label.configure(text_color=text_color)
         theme_label.configure(text_color=text_color)
         camera_label.configure(text_color=text_color)
-        save_button.configure(text_color=text_color)
+        save_button.configure(text_color="#eeeee4")
 
     # Settings Label
     settings_label = ctk.CTkLabel(settings_window, text="Settings", font=("Arial", 20))
@@ -241,13 +241,14 @@ def open_settings():
         settings_window,
         text="Save",
         fg_color="#ba3b0a",
+        text_color="#eeeee4",
+        hover_color="#9a2b07",
         command=lambda: save_settings(confidence_slider.get(), camera_dropdown.get())
     )
     save_button.pack(pady=20)
 
     # Set initial text color based on the default theme
     update_text_color("Light")
-
 
 # Function to apply the selected theme
 def apply_theme(theme, target_frame=None, update_text_color=None):
@@ -343,6 +344,83 @@ logo_placeholder.pack(pady=20)
 title_label = ctk.CTkLabel(master=main_frame, text="Welcome to SignSpotter", font=("Arial", 24), bg_color="#eeeee4")
 title_label.pack(pady=20)
 
+def open_information():
+    info_window = ctk.CTkToplevel(app)
+    info_window.title("Information")
+    info_window.geometry("800x1300")
+    info_window.configure(fg_color="#f4f4f4")  # Light gray background (darker than white)
+
+    # Add Title
+    title_label = ctk.CTkLabel(info_window, text="Welcome to Traffic Sign Spotter", font=("Arial", 30, "bold"), text_color="black")
+    title_label.pack(pady=20)
+
+    # Add App Brief
+    app_brief = ctk.CTkLabel(info_window,
+                             text="This app uses a machine learning model to detect traffic signs in images, videos, and live camera feeds. Follow the steps below to configure the app to your preferences.",
+                             font=("Arial", 20), wraplength=750, text_color="black")
+    app_brief.pack(pady=10)
+
+    # Step 1: Information Image
+    step1_image = Image.open("resources/step1_image.png")  # Replace with the actual image path
+    step1_image = step1_image.resize((700, 350))
+    step1_image_tk = ImageTk.PhotoImage(step1_image)
+    step1_image_label = ctk.CTkLabel(info_window, image=step1_image_tk)
+    step1_image_label.image = step1_image_tk  # Keep reference
+    step1_image_label.pack(pady=20)
+
+    step1_text = ctk.CTkLabel(info_window, text="Step 1: Click on the 'Settings' button to learn about the app and configure",
+                              font=("Arial", 18), text_color="black")
+    step1_text.pack(pady=5)
+
+    # Step 2-5: Steps with One Image
+    step2_5_text = ctk.CTkLabel(info_window, text="Steps 2-5: Now, follow these steps to configure the app.",
+                                font=("Arial", 20, "bold"), text_color="black")
+    step2_5_text.pack(pady=15)
+
+    # Step 2-5 Image
+    step2_5_image = Image.open("resources/step2_5_image.png")  # Replace with the actual image path
+    step2_5_image = step2_5_image.resize((500, 300))
+    step2_5_image_tk = ImageTk.PhotoImage(step2_5_image)
+    step2_5_image_label = ctk.CTkLabel(info_window, image=step2_5_image_tk)
+    step2_5_image_label.image = step2_5_image_tk  # Keep reference
+    step2_5_image_label.pack(pady=20)
+
+    # Step 2: Confidence Threshold Selection
+    step2_text = ctk.CTkLabel(info_window,
+                              text="Step 2: Adjust the Confidence Threshold. A lower threshold detects more signs, including those with low confidence, which may lead to false positives. A higher threshold gives more accurate detections but might miss some signs. For better accuracy, set it higher.",
+                              font=("Arial", 18), wraplength=750, text_color="black")
+    step2_text.pack(pady=5)
+
+    # Step 3: Theme Selection
+    step3_text = ctk.CTkLabel(info_window,
+                              text="Step 3: Choose between Light and Dark themes to personalize the app's appearance.",
+                              font=("Arial", 18), wraplength=750, text_color="black")
+    step3_text.pack(pady=5)
+
+    # Step 4: Camera Selection
+    step4_text = ctk.CTkLabel(info_window,
+                              text="Step 4: Select the camera you wish to use. Choose from the available cameras on your device.",
+                              font=("Arial", 18), wraplength=750, text_color="black")
+    step4_text.pack(pady=5)
+
+    # Step 5: Save Button
+    step5_text = ctk.CTkLabel(info_window, text="Step 5: Click 'Save' to store your settings and start using the app.",
+                              font=("Arial", 18), wraplength=750, text_color="black")
+    step5_text.pack(pady=5)
+
+    # Add Final Text
+    final_text = ctk.CTkLabel(info_window,
+                              text="Thank you for using Traffic Sign Spotter! We hope this tool helps you detect traffic signs effectively and accurately.",
+                              font=("Arial", 20), wraplength=750, text_color="black")
+    final_text.pack(pady=20)
+
+    # Close Button
+    close_button = ctk.CTkButton(info_window, text="Close", command=info_window.destroy, fg_color="#ba3b0a",
+                                 text_color="white")
+    close_button.pack(pady=10)
+
+
+
 # Buttons for functionalities
 button_live_feed = ctk.CTkButton(
     master=main_frame,
@@ -350,7 +428,7 @@ button_live_feed = ctk.CTkButton(
     command=start_live_feed,
     fg_color="#ba3b0a",
     text_color="white",
-    width=250,  # Main button width
+    hover_color="#9a2b07", width=250,  # Main button width
     height=60   # Main button height
 )
 button_live_feed.pack(pady=20)
@@ -361,7 +439,7 @@ button_image_upload = ctk.CTkButton(
     command=upload_image,
     fg_color="#ba3b0a",
     text_color="white",
-    width=250,
+    hover_color="#9a2b07", width=250,
     height=60
 )
 button_image_upload.pack(pady=10)
@@ -372,7 +450,7 @@ button_video_upload = ctk.CTkButton(
     command=upload_video,
     fg_color="#ba3b0a",
     text_color="white",
-    width=250,
+    hover_color="#9a2b07", width=250,
     height=60
 )
 button_video_upload.pack(pady=10)
@@ -387,7 +465,7 @@ settings_button = ctk.CTkButton(
     fg_color="#ba3b0a",
     text_color="white",
     command=open_settings,
-    width=140,  # Smaller navigation button width
+    hover_color="#9a2b07", width=140,  # Smaller navigation button width
     height=45   # Smaller navigation button height
 )
 settings_button.pack(side="left", expand=True, pady=10, padx=10)
@@ -397,8 +475,8 @@ info_button = ctk.CTkButton(
     text="Information",
     fg_color="#ba3b0a",
     text_color="white",
-    command=lambda: print("information clicked"),
-    width=140,
+    command=lambda:open_information(),
+    hover_color="#9a2b07",    width=140,
     height=45
 )
 info_button.pack(side="left", expand=True, pady=10, padx=10)
@@ -409,6 +487,7 @@ exit_button = ctk.CTkButton(
     fg_color="#ba3b0a",
     text_color="white",
     command=app.quit,
+    hover_color="#9a2b07",
     width=140,
     height=45
 )
