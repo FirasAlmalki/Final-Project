@@ -1,0 +1,66 @@
+Traffic Sign Detection Project
+
+Description
+
+The Traffic Sign Detection Project is designed to detect road signs in real-time from video inputs. It utilizes the power of computer vision models, specifically YOLOv8 (You Only Look Once) architecture, to accurately identify and label traffic signs from video frames. The model is trained using a dataset of traffic signs and the application provides real-time detection and visual feedback with bounding boxes around detected signs.
+
+Key Features:
+
+Real-time detection of traffic signs using a webcam or uploaded video.
+Visualization of detected signs with bounding boxes on each frame.
+Video output with processed frames and bounding boxes.
+Option to process the video and output frames with detected signs saved to a specified directory.
+Compatible with custom datasets like GTSRB (German Traffic Sign Recognition Benchmark).
+Requirements
+To run this project, you will need to install the following dependencies:
+
+
+certifi==2024.12.14
+charset-normalizer==3.4.1
+colorama==0.4.6
+contourpy==1.3.1
+customtkinter==5.2.2
+cycler==0.12.1
+darkdetect==0.8.0
+filelock==3.17.0
+fonttools==4.55.6
+fsspec==2024.12.0
+idna==3.10
+Jinja2==3.1.5
+kiwisolver==1.4.8
+MarkupSafe==3.0.2
+matplotlib==3.10.0
+mpmath==1.3.0
+networkx==3.4.2
+numpy==2.2.2
+opencv-python==4.11.0.86
+packaging==24.2
+pandas==2.2.3
+pillow==11.1.0
+playsound==1.2.2
+psutil==6.1.1
+py-cpuinfo==9.0.0
+pyparsing==3.2.1
+python-dateutil==2.9.0.post0
+pytz==2024.2
+PyYAML==6.0.2
+requests==2.32.3
+scipy==1.15.1
+seaborn==0.13.2
+setuptools==75.8.0
+six==1.17.0
+sympy==1.13.1
+torch==2.5.1
+torchvision==0.20.1
+tqdm==4.67.1
+typing_extensions==4.12.2
+tzdata==2025.1
+ultralytics==8.3.67
+ultralytics-thop==2.0.14
+urllib3==2.3.0
+
+
+You can install all dependencies by running the following command:
+
+
+pip install -r requirements.txt
