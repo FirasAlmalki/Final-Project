@@ -42,7 +42,6 @@ class ImageProcessor:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-
 class VideoProcessor:
     def __init__(self):
         self.last_detected_sign = None
@@ -61,7 +60,7 @@ class VideoProcessor:
         out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
         frame_count = 0
-        frame_skip = 3  # Process every 3rd frame (you can adjust this)
+        frame_skip = 1  # Process every 3rd frame (you can adjust this)
 
         while video.isOpened():
             ret, frame = video.read()
@@ -103,9 +102,11 @@ class VideoProcessor:
                         self.last_detected_sign = sign_image
                         new_sign_detected = True
 
-            # If a new sign is detected, display it in a separate window
+            # If a new sign is detected, resize the detected sign to match the bounding box size
             if new_sign_detected and self.last_detected_sign is not None:
-                cv2.imshow("Last Detected Sign", self.last_detected_sign)
+                # Resize the last detected sign to match the bounding box dimensions
+                sign_resized = cv2.resize(self.last_detected_sign, (x2 - x1, y2 - y1), interpolation=cv2.INTER_LINEAR)
+                cv2.imshow("Last Detected Sign", sign_resized)
 
             # Save the frame with bounding box in the output directory
             if new_sign_detected:
@@ -128,7 +129,6 @@ class VideoProcessor:
         cv2.destroyAllWindows()
 
         print(f"Processed video saved as {output_path}")
-
 
 class LiveFeedProcessor:
     def __init__(self):
