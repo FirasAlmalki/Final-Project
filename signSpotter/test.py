@@ -6,6 +6,7 @@ from PIL import Image, ImageTk
 import playsound
 import numpy as np
 import cv2
+from ultralytics import YOLO
 
 # Initialize the Roboflow client
 CLIENT = InferenceHTTPClient(
@@ -17,33 +18,40 @@ CLIENT = InferenceHTTPClient(
 output_dir = 'output'  # Change this to any valid path
 
 class ImageProcessor:
-    @staticmethod
-    def process_image(file_path):
+    def __init__(self):
+        self.model_path = "C:/Users/Admin/Desktop/Final/Final-Project/signSpotter/runs/detect/train2/best.pt"
+        self.model = YOLO(self.model_path)
+
+    def process_image(self, file_path):
         image = cv2.imread(file_path)
         if image is None:
             print(f"Error: Could not load the image {file_path}.")
             return
 
-        result = CLIENT.infer(file_path, model_id="road-sign-detection-in-real-time/3")
+        # Perform inference
+        results = self.model(image)
 
-        for prediction in result['predictions']:
-            x1 = int(prediction['x'] - prediction['width'] / 2)
-            y1 = int(prediction['y'] - prediction['height'] / 2)
-            x2 = int(prediction['x'] + prediction['width'] / 2)
-            y2 = int(prediction['y'] + prediction['height'] / 2)
-            confidence = prediction['confidence']
-            class_name = prediction['class']
+        for result in results:
+            for box in result.boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box coordinates
+                confidence = box.conf[0].item()  # Confidence score
+                class_id = int(box.cls[0].item())  # Class ID
+                class_name = self.model.names[class_id]  # Class name
 
-            cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(image, f'{class_name} {confidence:.2f}', (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                # Draw bounding box and label
+                cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(image, f'{class_name} {confidence:.2f}',
+                            (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.9, (36, 255, 12), 2)
 
-        cv2.imshow(f'Roboflow Detection - {os.path.basename(file_path)}', image)
+        cv2.imshow(f'YOLOv8 Detection - {os.path.basename(file_path)}', image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
 class VideoProcessor:
     def __init__(self):
+        self.model_path = "C:/Users/Admin/Desktop/Final/Final-Project/signSpotter/runs/detect/train2/best.pt"
+        self.model = YOLO(self.model_path)
         self.last_detected_sign = None
         self.output_dir = "output"
         os.makedirs(self.output_dir, exist_ok=True)
@@ -56,71 +64,63 @@ class VideoProcessor:
         fps = video.get(cv2.CAP_PROP_FPS)
 
         output_path = os.path.join(self.output_dir, f"processed_{os.path.basename(file_path)}")
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Faster codec
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec for saving video
         out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
         frame_count = 0
-        frame_skip = 1  # Process every 3rd frame (you can adjust this)
+        frame_skip = 3  # Process every 3rd frame to optimize performance
 
         while video.isOpened():
             ret, frame = video.read()
             if not ret:
                 break
 
-            # Skip frames to process fewer frames
+            # Skip frames for efficiency
             if frame_count % frame_skip != 0:
                 frame_count += 1
                 continue
 
-            result = CLIENT.infer(frame, model_id="road-sign-detection-in-real-time/3")
+            results = self.model(frame)
             new_sign_detected = False
 
-            for prediction in result['predictions']:
-                x1 = int(prediction['x'] - prediction['width'] / 2)
-                y1 = int(prediction['y'] - prediction['height'] / 2)
-                x2 = int(prediction['x'] + prediction['width'] / 2)
-                y2 = int(prediction['y'] + prediction['height'] / 2)
-                confidence = prediction['confidence']
-                class_name = prediction['class']
+            for result in results:
+                for box in result.boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    confidence = box.conf[0].item()
+                    class_id = int(box.cls[0].item())
+                    class_name = self.model.names[class_id]
 
-                # Draw bounding box and confidence
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, f'{class_name} {confidence:.2f}', (x1, y1 - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                    if confidence >= 0.8:
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.putText(frame, f'{class_name} {confidence:.2f}',
+                                    (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.9, (36, 255, 12), 2)
 
-                sign_image = frame[y1:y2, x1:x2]
-                if sign_image is not None:
-                    # Resize the detected sign image to match the shape of the previous sign
-                    if self.last_detected_sign is not None:
-                        sign_image_resized = cv2.resize(sign_image, (
-                        self.last_detected_sign.shape[1], self.last_detected_sign.shape[0]),
-                                                        interpolation=cv2.INTER_LINEAR)
-                        if not np.array_equal(self.last_detected_sign, sign_image_resized):
-                            self.last_detected_sign = sign_image_resized
-                            new_sign_detected = True
-                    else:
-                        self.last_detected_sign = sign_image
-                        new_sign_detected = True
+                        sign_image = frame[y1:y2, x1:x2]
+                        if sign_image is not None:
+                            if self.last_detected_sign is None:
+                                self.last_detected_sign = sign_image
+                                new_sign_detected = True
+                            else:
+                                resized_sign_image = cv2.resize(sign_image,
+                                                                (self.last_detected_sign.shape[1],
+                                                                 self.last_detected_sign.shape[0]))
+                                if not np.array_equal(self.last_detected_sign, resized_sign_image):
+                                    self.last_detected_sign = resized_sign_image
+                                    new_sign_detected = True
 
-            # If a new sign is detected, resize the detected sign to match the bounding box size
             if new_sign_detected and self.last_detected_sign is not None:
-                # Resize the last detected sign to match the bounding box dimensions
-                sign_resized = cv2.resize(self.last_detected_sign, (x2 - x1, y2 - y1), interpolation=cv2.INTER_LINEAR)
+                sign_resized = cv2.resize(self.last_detected_sign, (x2 - x1, y2 - y1))
                 cv2.imshow("Last Detected Sign", sign_resized)
 
-            # Save the frame with bounding box in the output directory
+            # Save the processed frame
             if new_sign_detected:
                 frame_filename = os.path.join(self.output_dir, f"frame_{frame_count}.jpg")
                 cv2.imwrite(frame_filename, frame)
-                frame_count += 1
 
-            # Write the processed frame to the video output file
-            out.write(frame)
-
-            # Display the processed frame in a window
+            out.write(frame)  # Save processed frame to video
             cv2.imshow(f'Processing {os.path.basename(file_path)}', frame)
 
-            # If 'q' is pressed, stop processing
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
@@ -130,11 +130,16 @@ class VideoProcessor:
 
         print(f"Processed video saved as {output_path}")
 
+
 class LiveFeedProcessor:
     def __init__(self):
         self.last_detected_sign = None
         self.alarm_played = False
         self.confidence_threshold = 0.8
+        self.model_path = "C:/Users/Admin/Desktop/Final/Final-Project/signSpotter/runs/detect/train2/best.pt"
+
+        # Load the local YOLOv8 model
+        self.model = YOLO(self.model_path)
 
     def process_live_feed(self, selected_camera_index):
         cap = cv2.VideoCapture(selected_camera_index)
@@ -147,49 +152,50 @@ class LiveFeedProcessor:
             if not ret:
                 break
 
-            result = CLIENT.infer(frame, model_id="road-sign-detection-in-real-time/3")
+            # Run YOLOv8 inference on the frame
+            results = self.model(frame)
+
             new_sign_detected = False
 
-            for prediction in result['predictions']:
-                x1 = int(prediction['x'] - prediction['width'] / 2)
-                y1 = int(prediction['y'] - prediction['height'] / 2)
-                x2 = int(prediction['x'] + prediction['width'] / 2)
-                y2 = int(prediction['y'] + prediction['height'] / 2)
-                confidence = prediction['confidence']
-                class_name = prediction['class']
+            for result in results:
+                for box in result.boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])  # Get bounding box
+                    confidence = box.conf[0].item()  # Confidence score
+                    class_id = int(box.cls[0].item())  # Class ID
+                    class_name = self.model.names[class_id]  # Class name
 
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, f'{class_name} {confidence:.2f}', (x1, y1 - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                    if confidence >= self.confidence_threshold:
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.putText(frame, f'{class_name} {confidence:.2f}',
+                                    (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.9, (36, 255, 12), 2)
 
-                if confidence >= self.confidence_threshold:
-                    sign_image = frame[y1:y2, x1:x2]
-                    if sign_image is not None:
-                        if self.last_detected_sign is None:
-                            self.last_detected_sign = sign_image
-                            new_sign_detected = True
-                        else:
-                            resized_sign_image = cv2.resize(sign_image,
-                                                            (self.last_detected_sign.shape[1], self.last_detected_sign.shape[0]))
-
-                            if not (self.last_detected_sign == resized_sign_image).all():
-                                self.last_detected_sign = resized_sign_image
+                        sign_image = frame[y1:y2, x1:x2]
+                        if sign_image is not None:
+                            if self.last_detected_sign is None:
+                                self.last_detected_sign = sign_image
                                 new_sign_detected = True
+                            else:
+                                resized_sign_image = cv2.resize(sign_image,
+                                                                (self.last_detected_sign.shape[1],
+                                                                 self.last_detected_sign.shape[0]))
+                                if not np.array_equal(self.last_detected_sign, resized_sign_image):
+                                    self.last_detected_sign = resized_sign_image
+                                    new_sign_detected = True
 
             if new_sign_detected and self.last_detected_sign is not None:
                 cv2.imshow("Last Detected Sign", self.last_detected_sign)
+                playsound.playsound("alarm.mp3")  # Play alarm sound
+                self.alarm_played = True
 
-                if confidence >= self.confidence_threshold:
-                    playsound.playsound("alarm.mp3")
-                    self.alarm_played = True
-
-            cv2.imshow("Live Feed - Roboflow Detection", frame)
+            cv2.imshow("Live Feed - YOLOv8 Detection", frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
         cap.release()
         cv2.destroyAllWindows()
+
 
 class SignSpotterApp:
     def __init__(self):
