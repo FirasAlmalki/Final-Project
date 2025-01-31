@@ -1,4 +1,3 @@
-from inference_sdk import InferenceHTTPClient
 import customtkinter as ctk
 import os
 from tkinter import filedialog
@@ -8,18 +7,15 @@ import numpy as np
 import cv2
 from ultralytics import YOLO
 
-# Initialize the Roboflow client
-CLIENT = InferenceHTTPClient(
-    api_url="https://detect.roboflow.com",
-    api_key="Uv06rawidNIWdABmMvGC"
-)
-
 # Define output directory for processed files
-output_dir = 'output'  # Change this to any valid path
+output_dir = 'output'
+
+
+
 
 class ImageProcessor:
     def __init__(self):
-        self.model_path = "C:/Users/Admin/Desktop/Final/Final-Project/signSpotter/runs/detect/train2/best.pt"
+        self.model_path = "runs/detect/train2/best.pt"
         self.model = YOLO(self.model_path)
 
     def process_image(self, file_path):
@@ -48,9 +44,13 @@ class ImageProcessor:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
+
+
+
+
 class VideoProcessor:
     def __init__(self):
-        self.model_path = "C:/Users/Admin/Desktop/Final/Final-Project/signSpotter/runs/detect/train2/best.pt"
+        self.model_path = "runs/detect/train2/best.pt"
         self.model = YOLO(self.model_path)
         self.last_detected_sign = None
         self.output_dir = "output"
@@ -131,12 +131,15 @@ class VideoProcessor:
         print(f"Processed video saved as {output_path}")
 
 
+
+
+
 class LiveFeedProcessor:
     def __init__(self):
         self.last_detected_sign = None
         self.alarm_played = False
         self.confidence_threshold = 0.8
-        self.model_path = "C:/Users/Admin/Desktop/Final/Final-Project/signSpotter/runs/detect/train2/best.pt"
+        self.model_path = "runs/detect/train2/best.pt"
 
         # Load the local YOLOv8 model
         self.model = YOLO(self.model_path)
@@ -195,6 +198,9 @@ class LiveFeedProcessor:
 
         cap.release()
         cv2.destroyAllWindows()
+
+
+
 
 
 class SignSpotterApp:
