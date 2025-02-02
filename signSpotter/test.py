@@ -37,13 +37,12 @@ class ImageProcessor:
                 # Draw bounding box and label
                 cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 cv2.putText(image, f'{class_name} {confidence:.2f}',
-                            (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                            (x1, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX,
                             0.9, (36, 255, 12), 2)
 
         cv2.imshow(f'YOLOv8 Detection - {os.path.basename(file_path)}', image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-
 
 
 
@@ -67,18 +66,12 @@ class VideoProcessor:
         fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec for saving video
         out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
-        frame_count = 0
-        frame_skip = 3  # Process every 3rd frame to optimize performance
+        frame_count = 0  # Track frame count
 
         while video.isOpened():
             ret, frame = video.read()
             if not ret:
                 break
-
-            # Skip frames for efficiency
-            if frame_count % frame_skip != 0:
-                frame_count += 1
-                continue
 
             results = self.model(frame)
             new_sign_detected = False
@@ -86,43 +79,42 @@ class VideoProcessor:
             for result in results:
                 for box in result.boxes:
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
-                    confidence = box.conf[0].item()
                     class_id = int(box.cls[0].item())
                     class_name = self.model.names[class_id]
 
-                    if confidence >= 0.8:
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        cv2.putText(frame, f'{class_name} {confidence:.2f}',
-                                    (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                                    0.9, (36, 255, 12), 2)
+                    # Draw bounding box and label
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(frame, class_name, (x1, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX,
+                                0.9, (36, 255, 12), 2)
 
-                        sign_image = frame[y1:y2, x1:x2]
-                        if sign_image is not None:
-                            if self.last_detected_sign is None:
-                                self.last_detected_sign = sign_image
+                    # Save detected sign
+                    sign_image = frame[y1:y2, x1:x2]
+                    if sign_image is not None:
+                        if self.last_detected_sign is None:
+                            self.last_detected_sign = sign_image
+                            new_sign_detected = True
+                        else:
+                            resized_sign_image = cv2.resize(sign_image,
+                                                            (self.last_detected_sign.shape[1],
+                                                             self.last_detected_sign.shape[0]))
+                            if not np.array_equal(self.last_detected_sign, resized_sign_image):
+                                self.last_detected_sign = resized_sign_image
                                 new_sign_detected = True
-                            else:
-                                resized_sign_image = cv2.resize(sign_image,
-                                                                (self.last_detected_sign.shape[1],
-                                                                 self.last_detected_sign.shape[0]))
-                                if not np.array_equal(self.last_detected_sign, resized_sign_image):
-                                    self.last_detected_sign = resized_sign_image
-                                    new_sign_detected = True
 
             if new_sign_detected and self.last_detected_sign is not None:
                 sign_resized = cv2.resize(self.last_detected_sign, (x2 - x1, y2 - y1))
                 cv2.imshow("Last Detected Sign", sign_resized)
 
             # Save the processed frame
-            if new_sign_detected:
-                frame_filename = os.path.join(self.output_dir, f"frame_{frame_count}.jpg")
-                cv2.imwrite(frame_filename, frame)
+            frame_filename = os.path.join(self.output_dir, f"frame_{frame_count}.jpg")
+            cv2.imwrite(frame_filename, frame)
 
             out.write(frame)  # Save processed frame to video
             cv2.imshow(f'Processing {os.path.basename(file_path)}', frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+
 
         video.release()
         out.release()
@@ -170,7 +162,7 @@ class LiveFeedProcessor:
                     if confidence >= self.confidence_threshold:
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         cv2.putText(frame, f'{class_name} {confidence:.2f}',
-                                    (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                    (x1, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX,
                                     0.9, (36, 255, 12), 2)
 
                         sign_image = frame[y1:y2, x1:x2]
@@ -198,7 +190,6 @@ class LiveFeedProcessor:
 
         cap.release()
         cv2.destroyAllWindows()
-
 
 
 
